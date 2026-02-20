@@ -67,7 +67,7 @@ export const activityEngine = {
                         type: 'FOLLOW_UP',
                         title: `Follow up with ${p.cliente_nome}`,
                         description: `Sent ${daysSinceSent.toFixed(0)} days ago • ${p.total.toFixed(0)}€`,
-                        related_proposal_id: p.proposta_id,
+                        related_proposal_id: p.internal_id || p.proposta_id,
                         related_client_id: p.cliente_id,
                         created_for_user: user.email,
                         origin: 'system',
@@ -80,7 +80,7 @@ export const activityEngine = {
 
         // 2) RECONNECT: No contact > 30 days
         clients.forEach(c => {
-            if (['Lead', 'Prospect', 'Active client'].includes(c.status)) {
+            if (['Lead', 'Prospect', 'Active Client'].includes(c.status)) {
                 const daysSinceContact = calculateDaysDiff(c.last_contact_date);
                 if (daysSinceContact > 30) {
                     suggestions.push({

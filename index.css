@@ -1,11 +1,88 @@
-:root {
-  font-family: Inter, system-ui, sans-serif;
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #4A6C56;
+  --color-primary-hover: #3B5544;
+  --color-primary-light: #E9F0EC;
+
+  --color-neutral-50: #F3F1EA;
+  --color-neutral-100: #FFFFFF;
+  --color-neutral-200: #E5E4DE;
+  --color-neutral-900: #111827;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  /* Softer, more diffuse */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.02), 0 8px 24px -4px rgba(0, 0, 0, 0.04);
 }
 
-body {
-  margin: 0;
-  background: #f8fafc;
-  /* um cinza claro */
-  color: #0f172a;
-  /* texto escuro */
+@layer base {
+  body {
+    @apply bg-neutral-50 text-neutral-800 font-sans antialiased;
+  }
+
+  /* Fix for duplicate calendar icon: hide the browser native one */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    background: transparent;
+    bottom: 0;
+    color: transparent;
+    cursor: pointer;
+    height: auto;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: auto;
+    opacity: 0;
+    z-index: 10;
+  }
+
+  input[type="date"] {
+    position: relative;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center font-medium transition-all duration-200 rounded-full disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center font-medium transition-all duration-200 rounded-full disabled:opacity-50 disabled:cursor-not-allowed bg-primary text-white hover:bg-primary-hover shadow-soft hover:shadow-md px-5 py-2.5;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center font-medium transition-all duration-200 rounded-full disabled:opacity-50 disabled:cursor-not-allowed bg-white text-neutral-700 border border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300 shadow-sm px-5 py-2.5;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center font-medium transition-all duration-200 rounded-full disabled:opacity-50 disabled:cursor-not-allowed text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200/50 px-4 py-2;
+  }
+
+  .card {
+    @apply bg-white rounded-3xl shadow-card border border-white/50 overflow-hidden;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 bg-white border border-transparent shadow-sm text-neutral-900 placeholder:text-neutral-400 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all;
+  }
+
+  /* Custom scrollbar for cleanliness */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-neutral-300 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-neutral-400;
+  }
 }

@@ -3,10 +3,9 @@ import { Cliente, MetaVenda, Produto, Proposta, PropostaLinha, ClientTask, Timel
 import { CLIENTES, METAS, PROPOSTAS, PROPOSTA_LINHAS, TASKS, TIMELINE_EVENTS, MOCK_USER } from './mockData';
 import { productCatalog } from './productCatalog';
 import { ProposalReferenceEngine } from './proposalReference';
-import { GoogleGenAI } from "@google/genai";
-import { GOOGLE_CONFIG } from '../config';
 import { postToSheets, fetchSheetRows } from './sheetsApi';
 import { mapProposalToDocModel, renderProposalHtml } from './documentGenerator';
+import { generateProposalEmailBody } from './genai';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -352,9 +351,9 @@ export const api = {
   getPropostaById: async (id: string): Promise<{ proposta: Proposta, linhas: PropostaLinha[] } | null> => {
     await hydrateFromSheetsOnce();
     await delay(200);
-    const proposta = PROPOSTAS.find(p => p.proposta_id === id);
+    const proposta = PROPOSTAS.find(p => p.proposta_id === id || p.internal_id === id);
     if (!proposta) return null;
-    const linhas = PROPOSTA_LINHAS.filter(l => l.proposta_id === id);
+    const linhas = PROPOSTA_LINHAS.filter(l => l.proposta_id === proposta.proposta_id);
     return { proposta, linhas };
   },
 
@@ -396,7 +395,16 @@ export const api = {
   toggleTask: async (taskId: string): Promise<void> => {
     await delay(100);
     const t = TASKS.find(task => task.task_id === taskId);
-    if (t) t.is_done = !t.is_done;
+    if (t) {
+      t.is_done = !t.is_done;
+      if (t.is_done) {
+        addTimelineEvent({
+          client_id: t.client_id,
+          type: 'note_added',
+          description: `Task completed: ${t.description}`
+        });
+      }
+    }
   },
 
   getTimeline: async (clientId: string): Promise<TimelineEvent[]> => {
@@ -431,36 +439,45 @@ export const api = {
     }
   },
 
-  createCliente: async (cliente: Cliente): Promise<void> => {
+  createCliente: async (cliente: Cliente): Promise<Cliente> => {
     await delay(500);
-    if (!cliente.metrics) {
-      cliente.metrics = {
+    const newClient: Cliente = {
+      ...cliente,
+      cliente_id: cliente.cliente_id || `C-${Date.now()}`,
+      data_criacao: cliente.data_criacao || new Date().toISOString(),
+      status: cliente.status || 'Lead',
+      preferred_language: cliente.preferred_language || 'English',
+      market: cliente.market || 'International',
+      metrics: cliente.metrics || {
         total_proposals_created: 0,
         total_proposals_won: 0,
         total_value_won: 0,
         total_value_pipeline: 0,
         win_rate_percent: 0,
-      };
-    }
-    cliente.updated_at = new Date().toISOString();
+      },
+    };
 
-    if (cliente.status === 'Inactive Client') cliente.is_active = false;
-    else cliente.is_active = true;
+    newClient.updated_at = new Date().toISOString();
 
-    CLIENTES.push(cliente);
+    if (newClient.status === 'Inactive Client') newClient.is_active = false;
+    else newClient.is_active = true;
+
+    CLIENTES.push(newClient);
     addTimelineEvent({
-      client_id: cliente.cliente_id,
+      client_id: newClient.cliente_id,
       type: 'note_added',
       description: 'Client created.',
     });
 
     // Always try to sync to Sheets in Mock mode
     try {
-      const row = clienteToSheetsRow(cliente);
+      const row = clienteToSheetsRow(newClient);
       await postToSheets('Clients', row);
     } catch (error) {
       console.error('Erro ao gravar cliente na sheet Clients:', error);
     }
+
+    return newClient;
   },
 
   updateCliente: async (cliente: Cliente): Promise<void> => {
@@ -488,7 +505,7 @@ export const api = {
     await delay(800);
 
     const existingIdx = PROPOSTAS.findIndex(
-      (p) => p.proposta_id === proposta.proposta_id
+      (p) => p.proposta_id === proposta.proposta_id || (proposta.internal_id && p.internal_id === proposta.internal_id)
     );
 
     if (existingIdx !== -1 && proposta.proposta_id) {
@@ -504,15 +521,20 @@ export const api = {
       PROPOSTAS[existingIdx] = updated;
 
       for (let i = PROPOSTA_LINHAS.length - 1; i >= 0; i--) {
-        if (PROPOSTA_LINHAS[i].proposta_id === proposta.proposta_id) {
+        if (PROPOSTA_LINHAS[i].proposta_id === previous.proposta_id) {
           PROPOSTA_LINHAS.splice(i, 1);
         }
       }
 
-      PROPOSTA_LINHAS.push(...linhas);
+      PROPOSTA_LINHAS.push(
+        ...linhas.map((line) => ({
+          ...line,
+          proposta_id: previous.proposta_id,
+        })),
+      );
       updateClientMetrics(updated.cliente_id);
 
-      return updated.proposta_id;
+      return updated.internal_id || updated.proposta_id;
     }
 
     const today = new Date();
@@ -535,6 +557,7 @@ export const api = {
     const newProposta: Proposta = {
       ...proposta,
       proposta_id: smartReference,
+      internal_id: proposta.internal_id || `P-${Date.now()}`,
       estado: isDraft ? 'Draft' : 'Pending Approval',
       data_atualizacao: new Date().toISOString(),
     };
@@ -573,7 +596,7 @@ export const api = {
       console.error('Erro ao gravar proposta nas sheets:', error);
     }
 
-    return smartReference;
+    return newProposta.internal_id || smartReference;
   },
 
   updatePropostaEstado: async (
@@ -583,7 +606,7 @@ export const api = {
     extras: Partial<Proposta> = {}
   ): Promise<void> => {
     await delay(400);
-    const idx = PROPOSTAS.findIndex(p => p.proposta_id === propostaId);
+    const idx = PROPOSTAS.findIndex(p => p.proposta_id === propostaId || p.internal_id === propostaId);
     if (idx !== -1) {
       const prevEstado = PROPOSTAS[idx].estado;
 
@@ -600,7 +623,7 @@ export const api = {
           client_id: PROPOSTAS[idx].cliente_id,
           type: 'status_change',
           description: `Proposal ${propostaId} changed to ${estado}`,
-          related_proposal_id: propostaId
+          related_proposal_id: PROPOSTAS[idx].internal_id || PROPOSTAS[idx].proposta_id
         });
       }
 
@@ -623,7 +646,7 @@ export const api = {
 
     const docId = `doc_${proposalId}_${Date.now()}`;
 
-    const idx = PROPOSTAS.findIndex(p => p.proposta_id === proposalId);
+    const idx = PROPOSTAS.findIndex(p => p.proposta_id === proposalId || p.internal_id === proposalId);
     if (idx !== -1) {
       PROPOSTAS[idx].doc_id = docId;
       PROPOSTAS[idx].doc_url = 'internal://' + docId; // Identificador interno
@@ -633,7 +656,7 @@ export const api = {
         client_id: PROPOSTAS[idx].cliente_id,
         type: 'doc_generated',
         description: `Document generated for proposal ${proposalId}`,
-        related_proposal_id: proposalId
+        related_proposal_id: PROPOSTAS[idx].internal_id || PROPOSTAS[idx].proposta_id
       });
     }
 
@@ -651,7 +674,7 @@ export const api = {
   }): Promise<{ success: boolean, error?: string }> => {
     await delay(1500);
 
-    const idx = PROPOSTAS.findIndex(p => p.proposta_id === payload.proposalId);
+    const idx = PROPOSTAS.findIndex(p => p.proposta_id === payload.proposalId || p.internal_id === payload.proposalId);
     if (idx !== -1) {
       PROPOSTAS[idx].estado = 'Sent';
       PROPOSTAS[idx].data_envio_email = new Date().toISOString();
@@ -663,7 +686,7 @@ export const api = {
         client_id: PROPOSTAS[idx].cliente_id,
         type: 'proposal_sent',
         description: `Proposal emailed to ${payload.to}`,
-        related_proposal_id: payload.proposalId
+        related_proposal_id: PROPOSTAS[idx].internal_id || PROPOSTAS[idx].proposta_id
       });
       updateClientMetrics(PROPOSTAS[idx].cliente_id);
     }
@@ -672,27 +695,7 @@ export const api = {
   },
 
   generateEmailBodyAI: async (proposal: Proposta, lines: PropostaLinha[]): Promise<string> => {
-    try {
-      if (!process.env.API_KEY) {
-        return `Dear ${proposal.cliente_nome},\n\nPlease find attached our proposal ${proposal.proposta_id}.\n\nBest regards,\n${proposal.comercial_nome}`;
-      }
-
-      // Initialize GoogleGenAI right before use
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const itemsList = lines.map(l => `- ${l.produto_nome} (Qty: ${l.quantidade})`).join('\n');
-      const prompt = `Write a professional, friendly email for a sales proposal from Kozegho. Salesperson: ${proposal.comercial_nome}. Client: ${proposal.cliente_nome}. Ref: ${proposal.proposta_id}. Value: ${proposal.total} EUR. Items: ${itemsList}. Tone: Professional. Language: English. No subject line.`;
-
-      // Generate content using Gemini 3 Flash model
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: prompt,
-      });
-
-      // Extract text from GenerateContentResponse
-      return response.text || "Could not generate email content.";
-    } catch (error) {
-      return `Dear Client,\n\nPlease find attached proposal ${proposal.proposta_id}.\n\nBest regards,\nKozegho Team`;
-    }
+    return generateProposalEmailBody(proposal, lines);
   },
 
   gerarEEnviarProposta: async (propostaId: string): Promise<string> => {

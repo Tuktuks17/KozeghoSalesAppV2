@@ -1,61 +1,60 @@
-# Kozegho Sales App Evolution - Deliverables
+# Kozegho Sales App Walkthrough
 
-## 1. System Upgrade Summary
-The application has been upgraded to a production-grade architecture with updated UI/UX and Supabase readiness.
+## Backend Architecture
+- API facade: `services/api.ts`
+- Modes:
+  - `supabase`: force Supabase
+  - `mock`: force mock service
+  - `auto`: Supabase if configured, otherwise mock
 
-**Key Changes:**
-- **UI/UX**: Transitioned to "Clean Kozegho" brand (Green #52B55A, Gray #858579). Implemented a design system using Tailwind CSS configuration instead of CDN.
-- **Architecture**: Refactored `CreateProposal.tsx` into a Multi-Step Wizard.
-- **Backend**: Introduced `api.ts` Facade to support both existing (Mock/Sheets) and new (Supabase) backends transparently.
-- **Persistence**: Centralized persistence logic in the Service layer, removing leaks in the View layer.
+Runtime selection is driven by:
+- `VITE_BACKEND_MODE`
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
 
-## 2. Supabase Setup Instructions
-To enable the Supabase backend:
+## Main User Flow
+1. Login (`/login`)
+2. Create/select client (`/create`)
+3. Add proposal lines (catalog + configurable options)
+4. Save draft
+5. Generate document (`/proposal/:id/document`)
+6. Send/track status in proposal detail (`/proposal/:id`)
 
-1. **Create Project**: Create a new project in Supabase.
-2. **Database**: Run the SQL script found in `supabase/schema.sql` in the Supabase SQL Editor.
-3. **Storage**: Create a private storage bucket named `proposals`.
-4. **Environment**: Rename `.env.example` to `.env` (or create it) with:
-   ```
-   VITE_SUPABASE_URL=https://your-project.supabase.co
-   VITE_SUPABASE_ANON_KEY=your-anon-key
-   GEMINI_API_KEY=your-gemini-key
-   ```
-   *If these variables are missing, the app automatically falls back to the Mock/Sheets mode.*
+## Data Layer
+- Repositories:
+  - `services/repositories/customersRepo.ts`
+  - `services/repositories/proposalsRepo.ts`
+  - `services/repositories/tasksRepo.ts`
+  - `services/repositories/auditRepo.ts`
 
-## 3. Feature Parity Checklist
-| Feature | Status | Notes |
-| :--- | :--- | :--- |
-| **Authentication** | ✅ Preserved | Uses existing User Context. Supabase Auth ready in schema. |
-| **Client Management** | ✅ Enhanced | Now supports strict persistence via API facade. |
-| **Product Catalog** | ✅ Preserved | Uses existing static catalog. |
-| **Proposal Logic** | ✅ Preserved | Calculations, Discounts, and Options logic maintained. |
-| **Sheet Integration** | ✅ Preserved | available in Mock mode. |
-| **PDF Generation** | ✅ Preserved | HTML generation logic kept intact. |
-| **UI/UX** | 🚀 Upgraded | New Sidebar, Wizard Flow, Brand Colors. |
+## Schema
+- Official schema: `supabase/schema.sql`
+- Migration artifact: `supabase/migrations/20260220_000001_core_schema.sql`
+- Legacy schema archive: `supabase/legacy/schema_old_pre_hardening.sql`
 
-## 4. Manual QA Test Cases
-1. **Wizard Flow**:
-   - Open "New Proposal".
-   - Step 1: Create a new Client. Verify it appears in the dropdown.
-   - Step 2: Set Subject and Validity.
-   - Step 3: Add a Configurable Product (e.g. Family 'CS'). Verify options appear. Added 2 items.
-   - Step 4: Review Total. Click "Finalize".
-   - **Expectation**: Proposal saved, redirect to Document Preview.
-2. **Data Persistence**:
-   - Reload page after creating proposal (in Supabase mode).
-   - **Expectation**: Proposal appears in "Proposal History" (accessible via API).
-3. **Responsiveness**:
-   - Open on Mobile (Simulator).
-   - **Expectation**: Sidebar becomes a hamburger menu. Wizard steps stack or scroll.
-
-## 5. Potential Growth Features
-- **E-Signature**: Integration with DocuSign or HelloSign using the generated PDF URL.
-- **Multi-tenant**: The Schema already supports `owner_id`. Easy to expand to `organization_id`.
-- **Analytics**: New Dashboard Zone B is ready for real SQL aggregations (SUM/COUNT).
-
-## 6. How to Run
-```bash
-npm install
-npm run dev
+## Env Checklist
+Required for Supabase mode:
+```env
+VITE_BACKEND_MODE=supabase
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
 ```
+
+Optional:
+```env
+VITE_GEMINI_API_KEY=
+VITE_DEBUG_AUTH=false
+VITE_SHEETS_API_URL=
+```
+
+## QA Checklist
+- `npm run dev`
+- login
+- create customer
+- create proposal + add lines
+- generate document
+- change proposal status
+- `npm run build`
+- `npm run typecheck`
+- `npm run lint`
+- `npm run test`

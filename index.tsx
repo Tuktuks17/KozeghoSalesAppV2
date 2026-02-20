@@ -8,9 +8,13 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
+import { AuthProvider } from './contexts/AuthContext';
+
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <div style={{ padding: 20, fontSize: 20 }}>✅ APP A RENDERIZAR</div>
+    <AuthProvider>
+      <App />
+    </AuthProvider>
   </React.StrictMode>
 );

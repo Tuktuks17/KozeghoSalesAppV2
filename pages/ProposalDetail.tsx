@@ -35,17 +35,19 @@ export default function ProposalDetail() {
 
     const handleStatusChange = async (newEstado: any, newResultado: any, extras: any = {}) => {
         if(!data) return;
-        await api.updatePropostaEstado(data.proposta.proposta_id, newEstado, newResultado, 
+        const proposalId = data.proposta.internal_id || data.proposta.proposta_id;
+        await api.updatePropostaEstado(proposalId, newEstado, newResultado, 
             { ...extras, data_resultado: newResultado === 'Won' || newResultado === 'Lost' ? new Date().toISOString() : undefined }
         );
-        loadData(data.proposta.proposta_id);
+        loadData(proposalId);
     };
 
     const handleGenerateAndSend = async () => {
         if(!data) return;
         setGenerating(true);
-        await api.gerarEEnviarProposta(data.proposta.proposta_id);
-        await loadData(data.proposta.proposta_id);
+        const proposalId = data.proposta.internal_id || data.proposta.proposta_id;
+        await api.gerarEEnviarProposta(proposalId);
+        await loadData(proposalId);
         setGenerating(false);
     };
 

@@ -102,6 +102,20 @@ const I18N: Record<string, any> = {
     }
 };
 
+const escapeHtml = (value: string): string =>
+    value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+const safeText = (value: string | number | undefined | null): string =>
+    escapeHtml(String(value ?? ''));
+
+const safeMultiline = (value: string | undefined | null): string =>
+    safeText(value).replace(/\n/g, '<br>');
+
 export const mapProposalToDocModel = (proposal: Proposta, client: Cliente, lines: PropostaLinha[], user: User): DocModel => {
     return {
         ref: proposal.proposta_id,
@@ -152,6 +166,24 @@ export const renderProposalHtml = (data: DocModel): string => {
         style: 'currency', 
         currency: data.currency 
     });
+
+    const itemsHtml = data.items.length > 0
+        ? data.items.map(item => `
+                    <tr>
+                        <td><div class="item-desc">${safeMultiline(item.description)}</div></td>
+                        <td class="col-qty">${safeText(item.qty)}</td>
+                        <td class="col-unit">${fmt.format(item.unitPrice)}</td>
+                        <td class="col-total">${fmt.format(item.total)}</td>
+                    </tr>
+                `).join('')
+        : `
+                    <tr>
+                        <td><div class="item-desc">-</div></td>
+                        <td class="col-qty">0</td>
+                        <td class="col-unit">${fmt.format(0)}</td>
+                        <td class="col-total">${fmt.format(0)}</td>
+                    </tr>
+                `;
 
     return `
 <!DOCTYPE html>
@@ -248,30 +280,30 @@ export const renderProposalHtml = (data: DocModel): string => {
         <header>
             <div class="brand">KOZEGHO</div>
             <div class="seller-info">
-                <strong>${data.seller.name}</strong><br>
-                ${data.seller.address.replace(/\n/g, '<br>')}<br>
-                VAT: ${data.seller.vat}
+                <strong>${safeText(data.seller.name)}</strong><br>
+                ${safeMultiline(data.seller.address)}<br>
+                VAT: ${safeText(data.seller.vat)}
             </div>
         </header>
 
         <div class="client-block">
             <div class="client-label">Bill To</div>
-            <div class="client-name">${data.client.company}</div>
+            <div class="client-name">${safeText(data.client.company)}</div>
             <div class="client-details">
-                Attn: ${data.client.name}<br>
-                ${data.client.address}<br>
-                VAT: ${data.client.vat}
+                Attn: ${safeText(data.client.name)}<br>
+                ${safeMultiline(data.client.address)}<br>
+                VAT: ${safeText(data.client.vat)}
             </div>
         </div>
 
         <div class="meta-line">
             <div class="meta-item">
                 <div class="meta-label">${t.date}</div>
-                <div class="meta-value">${data.date}</div>
+                <div class="meta-value">${safeText(data.date)}</div>
             </div>
             <div class="meta-item">
                 <div class="meta-label">${t.no}</div>
-                <div class="meta-value">${data.ref}</div>
+                <div class="meta-value">${safeText(data.ref)}</div>
             </div>
         </div>
 
@@ -285,14 +317,7 @@ export const renderProposalHtml = (data: DocModel): string => {
                 </tr>
             </thead>
             <tbody>
-                ${data.items.map(item => `
-                    <tr>
-                        <td><div class="item-desc">${item.description}</div></td>
-                        <td class="col-qty">${item.qty}</td>
-                        <td class="col-unit">${fmt.format(item.unitPrice)}</td>
-                        <td class="col-total">${fmt.format(item.total)}</td>
-                    </tr>
-                `).join('')}
+                ${itemsHtml}
             </tbody>
         </table>
 
@@ -300,15 +325,15 @@ export const renderProposalHtml = (data: DocModel): string => {
             <div class="summary-block">
                 <h4>${t.paymentInfo}</h4>
                 <div class="summary-content">
-                    Bank: ${data.seller.bank}<br>
-                    IBAN: ${data.seller.iban}<br>
-                    Terms: ${data.paymentTerms}
+                    Bank: ${safeText(data.seller.bank)}<br>
+                    IBAN: ${safeText(data.seller.iban)}<br>
+                    Terms: ${safeText(data.paymentTerms)}
                 </div>
             </div>
             <div class="summary-block">
                 <h4>${t.dueBy}</h4>
                 <div class="summary-content">
-                    <strong>${data.validUntil}</strong>
+                    <strong>${safeText(data.validUntil)}</strong>
                 </div>
             </div>
             <div class="summary-block total-due-box">
@@ -323,7 +348,7 @@ export const renderProposalHtml = (data: DocModel): string => {
         <footer>
             <div class="thanks">${t.thanks}</div>
             <div class="contacts">
-                ${data.seller.email} &nbsp;•&nbsp; ${data.seller.phone} &nbsp;•&nbsp; ${data.seller.website}
+                ${safeText(data.seller.email)} &nbsp;•&nbsp; ${safeText(data.seller.phone)} &nbsp;•&nbsp; ${safeText(data.seller.website)}
             </div>
         </footer>
     </div>

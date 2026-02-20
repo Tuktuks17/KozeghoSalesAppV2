@@ -392,7 +392,7 @@ export default function ClientDetail() {
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {proposals.map(p => (
-                                    <tr key={p.proposta_id} className="hover:bg-slate-50 cursor-pointer" onClick={() => navigate(`/proposal/${p.proposta_id}`)}>
+                                    <tr key={p.internal_id || p.proposta_id} className="hover:bg-slate-50 cursor-pointer" onClick={() => navigate(`/proposal/${p.internal_id || p.proposta_id}`)}>
                                         <td className="px-6 py-4">
                                             <div className="font-bold text-slate-900">{p.proposta_id}</div>
                                             <div className="text-xs text-slate-500">{p.assunto || 'No subject'}</div>

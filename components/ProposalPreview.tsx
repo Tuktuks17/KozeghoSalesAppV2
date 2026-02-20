@@ -70,10 +70,10 @@ interface ProposalPreviewProps {
 export const ProposalPreview: React.FC<ProposalPreviewProps> = ({ proposal, lines, client }) => {
     const lang = proposal.idioma || 'English';
     const t = I18N[lang] || I18N['English'];
-    
-    const fmt = new Intl.NumberFormat(lang === 'Portuguese' ? 'pt-PT' : 'en-IE', { 
-        style: 'currency', 
-        currency: proposal.moeda || 'EUR' 
+
+    const fmt = new Intl.NumberFormat(lang === 'Portuguese' ? 'pt-PT' : 'en-IE', {
+        style: 'currency',
+        currency: proposal.moeda || 'EUR'
     });
 
     const seller = {
@@ -98,7 +98,7 @@ export const ProposalPreview: React.FC<ProposalPreviewProps> = ({ proposal, line
                 <div className="text-right text-[10px] text-slate-500 space-y-0.5">
                     <div className="font-black text-slate-900 text-xs mb-1">{seller.name}</div>
                     <div>{seller.address}</div>
-                    <div>VAT: {seller.vat}</div>
+                    {/* VAT Removed */}
                     <div>{seller.website}</div>
                 </div>
             </div>
@@ -111,7 +111,7 @@ export const ProposalPreview: React.FC<ProposalPreviewProps> = ({ proposal, line
                     <div className="text-xs text-slate-500 space-y-1">
                         <div>{client.nome_contacto || '—'}</div>
                         <div className="max-w-[250px]">{client.morada_faturacao || '—'}</div>
-                        <div>VAT: {client.nif || '—'}</div>
+                        {/* VAT Removed */}
                     </div>
                 </div>
                 <div className="flex flex-col items-end">
@@ -178,9 +178,7 @@ export const ProposalPreview: React.FC<ProposalPreviewProps> = ({ proposal, line
                         <div className="bg-slate-900 text-white p-5 rounded-xl text-right shadow-xl shadow-slate-900/10">
                             <div className="text-[9px] font-bold text-slate-400 uppercase mb-1 tracking-widest">{t.totalDue}</div>
                             <div className="text-2xl font-black">{fmt.format(proposal.total)}</div>
-                            <div className="text-[9px] text-slate-400 mt-2 italic font-medium">
-                                {t.vat}: {fmt.format(proposal.iva_valor)}
-                            </div>
+                            {/* VAT Removed */}
                         </div>
                     </div>
                 </div>

@@ -1,0 +1,2 @@
+-- Deprecated: use /supabase/schema.sql (source of truth)
+-- and /supabase/migrations/20260220_000001_core_schema.sql.

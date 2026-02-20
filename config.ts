@@ -1,15 +1,14 @@
 export const GOOGLE_CONFIG = {
   // Google Apps Script Web App URLs
-  GENERATE_DOC_WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbx_PLACEHOLDER_FOR_GENERATE_DOC_SCRIPT/exec',
-  SEND_EMAIL_WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbx_PLACEHOLDER_FOR_SEND_EMAIL_SCRIPT/exec',
+  GENERATE_DOC_WEBAPP_URL: import.meta.env.VITE_GENERATE_DOC_WEBAPP_URL || '',
+  SEND_EMAIL_WEBAPP_URL: import.meta.env.VITE_SEND_EMAIL_WEBAPP_URL || '',
 
-  // URL REAL do Web App que escreve nas Sheets
-  SHEETS_WEBAPP_URL:
-    'https://script.google.com/macros/s/AKfycbz8C608ESc9kVnuWSybfcGUUKGDP1QWg6fe6GOyZKjWmxJntCRJxty7ABGJz33TUCd04A/exec',
+  // Sheets API bridge (explicit opt-in only)
+  SHEETS_WEBAPP_URL: import.meta.env.VITE_SHEETS_API_URL || '',
 
-  // (por agora estes ainda não estão a ser usados – ficam como placeholders)
-  PROPOSALS_SHEET_ID: '1YourSheetIdHere',
-  PROPOSALS_SHEET_NAME: 'Proposals_DB',
-  TEMPLATE_DOC_ID: '1YourTemplateDocIdHere',
-  OUTPUT_FOLDER_ID: '1YourOutputFolderIdHere',
+  // Optional document/sheets metadata
+  PROPOSALS_SHEET_ID: import.meta.env.VITE_PROPOSALS_SHEET_ID || '',
+  PROPOSALS_SHEET_NAME: import.meta.env.VITE_PROPOSALS_SHEET_NAME || 'Proposals_DB',
+  TEMPLATE_DOC_ID: import.meta.env.VITE_TEMPLATE_DOC_ID || '',
+  OUTPUT_FOLDER_ID: import.meta.env.VITE_OUTPUT_FOLDER_ID || '',
 };
