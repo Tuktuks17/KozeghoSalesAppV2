@@ -1,0 +1,11 @@
+:root {
+  font-family: Inter, system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #f8fafc;
+  /* um cinza claro */
+  color: #0f172a;
+  /* texto escuro */
+}

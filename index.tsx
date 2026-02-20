@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import './index.css';
 import App from './App';
 
 const rootElement = document.getElementById('root');
@@ -10,6 +11,6 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <div style={{ padding: 20, fontSize: 20 }}>✅ APP A RENDERIZAR</div>
   </React.StrictMode>
 );
