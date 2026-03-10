@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit2, FileDown } from 'lucide-react';
+import { ArrowLeft, Edit2, FileDown, ExternalLink, Loader2 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { usePDFGeneration } from '../hooks/usePDFGeneration';
 import { Proposta, PropostaLinha } from '../types';
 
 const DetailRow = ({ label, value }: { label: string; value?: React.ReactNode }) => (
@@ -34,14 +35,33 @@ export default function ProposalDetailPage() {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<{ proposta: Proposta; linhas: PropostaLinha[] } | null>(null);
+    const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+    const [pdfError, setPdfError] = useState<string | null>(null);
+    const { generatePDF, isGenerating } = usePDFGeneration();
 
     useEffect(() => {
         if (!id) return;
         api.getPropostaById(id).then(res => {
             setData(res);
+            // Pre-populate pdfUrl if already generated
+            if (res?.proposta.link_pdf_proposta) {
+                setPdfUrl(res.proposta.link_pdf_proposta);
+            }
             setLoading(false);
         });
     }, [id]);
+
+    const handleGeneratePDF = async () => {
+        if (!id) return;
+        setPdfError(null);
+        const url = await generatePDF(id);
+        if (url) {
+            setPdfUrl(url);
+            window.open(url, '_blank', 'noopener,noreferrer');
+        } else {
+            setPdfError('Não foi possível gerar o PDF. Verifica o Supabase Storage.');
+        }
+    };
 
     if (loading) return <div className="p-10 text-center text-slate-400">A carregar proposta…</div>;
     if (!data) return <div className="p-10 text-center text-slate-500">Proposta não encontrada.</div>;
@@ -88,22 +108,37 @@ export default function ProposalDetailPage() {
                             </button>
                         )}
 
-                        {/* PDF — placeholder, disabled */}
-                        <div className="relative group">
-                            <button
-                                disabled
-                                className="bg-slate-100 text-slate-400 px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-sm cursor-not-allowed select-none"
+                        {/* PDF buttons */}
+                        {pdfUrl && (
+                            <a
+                                href={pdfUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-sm transition-colors"
                             >
-                                <FileDown size={16} /> Gerar PDF
-                            </button>
-                            <div className="absolute bottom-full right-0 mb-2 px-3 py-1.5 bg-neutral-900 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-10 transition-opacity shadow-lg">
-                                Em breve
-                                <div className="absolute top-full right-4 w-2 h-2 bg-neutral-900 rotate-45 -translate-y-1" />
-                            </div>
-                        </div>
+                                <ExternalLink size={16} /> Ver PDF
+                            </a>
+                        )}
+                        <button
+                            onClick={handleGeneratePDF}
+                            disabled={isGenerating}
+                            className="bg-slate-900 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-sm hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                        >
+                            {isGenerating
+                                ? <><Loader2 size={16} className="animate-spin" /> A gerar…</>
+                                : <><FileDown size={16} /> {pdfUrl ? 'Regenerar PDF' : 'Gerar PDF'}</>
+                            }
+                        </button>
                     </div>
                 </div>
             </div>
+
+            {/* PDF error */}
+            {pdfError && (
+                <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                    {pdfError}
+                </div>
+            )}
 
             {/* Details grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
