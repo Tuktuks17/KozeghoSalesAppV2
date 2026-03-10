@@ -219,3 +219,22 @@ export interface SuggestedAction {
 }
 
 export type TimeRange = 'today' | 'week' | 'month' | 'quarter' | 'year';
+
+// Proposal CRUD input types (used by proposalsRepo)
+export interface CreateProposalInput {
+  orgId: string;
+  customerId: string;
+  title: string;
+  status?: EstadoProposta;
+  totalValue?: number;
+  pdfUrl?: string;
+  createdBy: string;
+}
+
+export interface UpdateProposalInput {
+  title?: string;
+  status?: EstadoProposta;
+  totalValue?: number;
+  pdfUrl?: string;
+  updatedBy?: string;
+}

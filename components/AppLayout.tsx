@@ -1,7 +1,7 @@
 import React, { useState, createContext, useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Layout, PlusCircle, Users, History, LogOut, Menu, User as UserIcon } from 'lucide-react';
+import { Layout, PlusCircle, Users, FileText, History, LogOut, Menu, User as UserIcon } from 'lucide-react';
 
 // Sidebar Context for Mobile Toggle
 type SidebarContextType = {
@@ -108,6 +108,13 @@ export const AppLayout = ({ children }: { children?: React.ReactNode }) => {
                             label="Clients"
                             path="/clients"
                             active={location.pathname.startsWith('/clients')}
+                            onClick={() => setIsMobileSidebarOpen(false)}
+                        />
+                        <SidebarItem
+                            icon={FileText}
+                            label="Propostas"
+                            path="/proposals"
+                            active={location.pathname.startsWith('/proposals')}
                             onClick={() => setIsMobileSidebarOpen(false)}
                         />
                         <SidebarItem

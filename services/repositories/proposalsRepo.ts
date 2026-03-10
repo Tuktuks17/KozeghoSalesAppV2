@@ -1,4 +1,4 @@
-import { Proposta, PropostaLinha } from '../../types';
+import { Proposta, PropostaLinha, UpdateProposalInput } from '../../types';
 import { normalizeProposalResult, normalizeProposalStatus } from '../domain';
 import { ProposalReferenceEngine } from '../proposalReference';
 import { supabase } from '../supabase/client';
@@ -369,5 +369,31 @@ export const proposalsRepo = {
     }
 
     return createdProposal.id;
+  },
+
+  updateProposal: async (id: string, data: UpdateProposalInput): Promise<void> => {
+    const payload: Record<string, unknown> = {};
+    if (data.title !== undefined) payload.subject = data.title;
+    if (data.status !== undefined) payload.status = normalizeProposalStatus(data.status);
+    if (data.totalValue !== undefined) payload.total = data.totalValue;
+    if (data.pdfUrl !== undefined) payload.pdf_url = data.pdfUrl;
+    if (data.updatedBy !== undefined) payload.updated_by = data.updatedBy;
+    payload.updated_at = new Date().toISOString();
+
+    const { error } = await supabase
+      .from('proposals')
+      .update(payload)
+      .eq('id', id);
+
+    if (error) console.error('Error updating proposal:', error);
+  },
+
+  deleteProposal: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('proposals')
+      .delete()
+      .eq('id', id);
+
+    if (error) console.error('Error deleting proposal:', error);
   },
 };

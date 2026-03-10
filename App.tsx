@@ -8,6 +8,8 @@ import Clients from './pages/Clients';
 import ClientDetail from './pages/ClientDetail';
 import NewClient from './pages/NewClient';
 import ProposalHistory from './pages/ProposalHistory';
+import ProposalsPage from './pages/ProposalsPage';
+import ProposalDetailPage from './pages/ProposalDetailPage';
 import Login from './pages/Login';
 import { useAuth } from './contexts/AuthContext';
 import { AppLayout } from './components/AppLayout';
@@ -51,6 +53,8 @@ export default function App() {
                   <Route path="/clients/new" element={<NewClient />} />
                   <Route path="/client/:id" element={<ClientDetail />} />
                   <Route path="/history" element={<ProposalHistory />} />
+                  <Route path="/proposals" element={<ProposalsPage />} />
+                  <Route path="/proposals/:id" element={<ProposalDetailPage />} />
                 </Routes>
               </AppLayout>
             </ProtectedRoute>
